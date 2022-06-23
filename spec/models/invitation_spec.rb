@@ -15,11 +15,11 @@ RSpec.describe Invitation do
     describe "after_save" do
       context "with valid data" do
         it "invites the user" do
-          invitation = build_invitation_whithout_user
           new_user = create_user
-          invitation.user = new_user
+          invitation = build_invitation_with_specific_user(new_user)
+
           invitation.save
-          expect(new_user).to be_invited
+          expect(invitation.user).to be_invited
         end
       end
 
@@ -30,8 +30,7 @@ RSpec.describe Invitation do
         # end
 
         it "does not save the invitation" do
-          invitation = build_invitation
-          invitation.team = nil
+          invitation = build_invitation_without_team
 
           invitation.save
           expect(invitation).not_to be_valid
@@ -39,11 +38,10 @@ RSpec.describe Invitation do
         end
 
         it "does not mark the user as invited" do
-          new_user = create_user
-          invitation = build_invitation
+          invitation = build_invitation_without_team
 
           invitation.save
-          expect(new_user).not_to be_invited
+          expect(invitation.user).not_to be_invited
         end
       end
     end
@@ -84,12 +82,14 @@ RSpec.describe Invitation do
 
       it "includes the email of the invitee" do
         invitation = build_invitation
+
         log_statement = invitation.event_log_statement
         expect(log_statement).to include("rookie@example.com")
       end
 
       it "includes the word 'PENDING'" do
         invitation = build_invitation
+
         log_statement = invitation.event_log_statement
         expect(log_statement).to include("PENDING")
       end
@@ -97,8 +97,9 @@ RSpec.describe Invitation do
 
     context "when the record is not saved and not valid" do
       it "includes INVALID" do
-        invitation = build_invitation
-        invitation.user = nil
+        invitation = build_invitation_without_user
+        # invitation.user = nil
+
         log_statement = invitation.event_log_statement
         expect(log_statement).to include("INVALID")
       end
@@ -123,8 +124,18 @@ RSpec.describe Invitation do
     Invitation.new(user: new_user, team: new_team)
   end
 
-  def build_invitation_whithout_user
+  def build_invitation_with_specific_user(new_user)
     new_team = create_team
-    Invitation.new(team: new_team)
+    Invitation.new(user: new_user, team: new_team)
+  end
+
+  def build_invitation_without_user
+    new_team = create_team
+    Invitation.new(user: nil, team: new_team)
+  end
+
+  def build_invitation_without_team
+    new_user = create_user
+    Invitation.new(user: new_user, team: nil)
   end
 end
